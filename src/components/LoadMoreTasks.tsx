@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { TaskCardSkeleton } from './TaskCardSkeleton';
 
 type LoadMoreTasksProps = {
   hasMore: boolean;
@@ -33,7 +34,13 @@ export function LoadMoreTasks({ hasMore, loading, error, disabled, onLoadMore }:
   return (
     <div ref={triggerRef} className="load-more" aria-busy={loading}>
       {error && <p className="error" role="alert">Could not load more tasks. Please try again.</p>}
-      {loading && <p role="status">Loading more tasks…</p>}
+      {loading && (
+        <div className="loading-cards" role="status" aria-label="Loading more tasks">
+          <TaskCardSkeleton />
+          <TaskCardSkeleton />
+          <TaskCardSkeleton />
+        </div>
+      )}
       <button
         className="secondary"
         disabled={disabled}

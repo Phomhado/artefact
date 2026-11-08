@@ -24,6 +24,7 @@ export function TaskForm({ task, disabled, saving, autoFocus = false, onSave, on
   const [title, setTitle] = useState(task?.titulo ?? '');
   const [description, setDescription] = useState(task?.descricao ?? '');
   const [error, setError] = useState('');
+  const draftVersion = useRef(0);
   const submitLabel = task ? 'Save changes' : 'Create task';
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -36,10 +37,25 @@ export function TaskForm({ task, disabled, saving, autoFocus = false, onSave, on
       return;
     }
 
+    const values = { titulo: title.trim(), descricao: description.trim() };
+    const version = ++draftVersion.current;
+
+    if (!task) {
+      setTitle('');
+      setDescription('');
+      titleRef.current?.focus();
+    }
+
     try {
-      await onSave({ titulo: title.trim(), descricao: description.trim() });
+      await onSave(values);
     } catch (error) {
-      setError(errorMessage(error));
+      setError(`Could not save "${values.titulo}": ${errorMessage(error)}`);
+      if (draftVersion.current === version) {
+        if (!task) {
+          setTitle(values.titulo);
+          setDescription(values.descricao);
+        }
+      }
     }
   }
 
@@ -61,7 +77,7 @@ export function TaskForm({ task, disabled, saving, autoFocus = false, onSave, on
             ref={titleRef}
             id="title"
             value={title}
-            onChange={(event) => setTitle(event.target.value)}
+            onChange={(event) => { draftVersion.current++; setTitle(event.target.value); }}
             required
             maxLength={120}
             autoFocus={autoFocus}
@@ -77,14 +93,14 @@ export function TaskForm({ task, disabled, saving, autoFocus = false, onSave, on
             rows={5}
             maxLength={2000}
             value={description}
-            placeholder="Add a few details, links, or a reminder…"
-            onChange={(event) => setDescription(event.target.value)}
+            placeholder="Add a little context…"
+            onChange={(event) => { draftVersion.current++; setDescription(event.target.value); }}
           />
           {error && <p id="form-error" className="error" role="alert">{error}</p>}
           <div className="form-actions">
             <button className="primary" type="submit">
-              {saving ? 'Saving…' : submitLabel}
-              {!saving && <Icon name="arrow" />}
+              {saving && task ? 'Saving…' : submitLabel}
+              <Icon name="arrow" />
             </button>
             {task && (
               <button className="secondary" type="button" onClick={onCancel}>

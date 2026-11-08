@@ -52,3 +52,13 @@ pnpm build
 ```
 
 The tests cover the task lifecycle, blank titles, missing tasks, and pagination boundaries, including changes between page requests.
+
+## Interaction details
+
+The task form stays above the list. Enter submits a title, clears the form, and keeps focus in the title field while the request runs. Failed submissions restore the values if no newer draft has been started.
+
+Deletion is optimistic: the task and count update immediately, with a toast for feedback. The previous query data is restored if the request fails, and the restored card slides back into view. Delete requests are guarded against repeated clicks while one is pending.
+
+Additional pages use three pulsing skeleton cards. Edit and delete actions appear on hover or keyboard focus on desktop. On touch devices, swipe left on a card or use its actions button to reveal them; swipe right closes them. Reduced-motion preferences disable the pulse and slide animations.
+
+Interaction tests cover pending and failed requests, draft preservation, swipe controls, and skeleton loading.

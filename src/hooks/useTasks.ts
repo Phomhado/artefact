@@ -2,6 +2,7 @@ import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-q
 import { trpc } from '@/lib/trpc';
 import { TASK_PAGE_SIZE } from '@/lib/taskPagination';
 import type { TaskPage } from '@/server/tasks';
+import { removeCachedTask, type TaskCache } from '@/lib/taskCache';
 
 type TaskInput = {
   titulo: string;
@@ -34,12 +35,25 @@ export function useTasks(initialPage: TaskPage) {
         ? trpc.tasks.update.mutate({ ...input, id: input.id })
         : trpc.tasks.create.mutate(input);
     },
-    onSuccess: refreshTasks,
+    onSuccess: () => { void refreshTasks(); },
   });
 
   const deleteTask = useMutation({
     mutationFn: (id: string) => trpc.tasks.delete.mutate({ id }),
-    onSuccess: refreshTasks,
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: taskKey });
+      const previous = queryClient.getQueryData<TaskCache>(taskKey);
+
+      if (previous) {
+        queryClient.setQueryData(taskKey, removeCachedTask(previous, id));
+      }
+
+      return { previous };
+    },
+    onError: (_, __, context) => {
+      if (context?.previous) queryClient.setQueryData(taskKey, context.previous);
+    },
+    onSettled: () => { void refreshTasks(); },
   });
 
   return { tasks, saveTask, deleteTask };

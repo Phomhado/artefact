@@ -9,8 +9,7 @@ type TaskListProps = {
   children: ReactNode;
   refreshing: boolean;
   refreshFailed: boolean;
-  notice: string;
-  deleteError: string;
+  restoredTaskId?: string;
   disabled: boolean;
   deletingId?: string;
   onEdit: (task: Task) => void;
@@ -24,8 +23,7 @@ export function TaskList({
   children,
   refreshing,
   refreshFailed,
-  notice,
-  deleteError,
+  restoredTaskId,
   disabled,
   deletingId,
   onEdit,
@@ -38,14 +36,12 @@ export function TaskList({
         <h2 id="list-heading">All tasks <span className="count">{total}</span></h2>
         {refreshing ? <span className="list-meta" role="status">Refreshing…</span> : <span className="list-meta">Newest first</span>}
       </div>
-      <p className={`notice${notice ? ' visible' : ''}`} role="status">{notice}</p>
       {refreshFailed && (
         <div className="error" role="alert">
           Could not refresh tasks.{' '}
           <button className="secondary" onClick={onRetry}>Try again</button>
         </div>
       )}
-      {deleteError && <p className="error" role="alert">{deleteError}</p>}
       {tasks.length === 0 ? (
         <div className="empty">
           <div className="empty-illustration" aria-hidden="true">
@@ -53,9 +49,9 @@ export function TaskList({
             <div className="empty-sheet"><Icon name="stack" /><i /><i /><i /></div>
             <span className="empty-plus"><Icon name="plus" /></span>
           </div>
-          <p className="eyebrow">A fresh page</p>
-          <h3>Big things start with a small task.</h3>
-          <p>Add your first task and give that idea<br /> a place to land.</p>
+          <p className="eyebrow">Room for what’s next</p>
+          <h3>You’re all caught up!</h3>
+          <p>Add a task above to get started.</p>
           <a className="empty-link" href="#title">Create your first task <Icon name="arrow" /></a>
         </div>
       ) : (
@@ -66,6 +62,7 @@ export function TaskList({
               task={task}
               disabled={disabled}
               deleting={deletingId === task.id}
+              restored={restoredTaskId === task.id}
               onEdit={onEdit}
               onDelete={onDelete}
             />
