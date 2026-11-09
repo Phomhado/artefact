@@ -1,11 +1,14 @@
 import type { Metadata } from 'next';
 import { Providers } from '@/components/Providers';
+import '@fontsource/ibm-plex-sans/latin-400.css';
+import '@fontsource/ibm-plex-sans/latin-500.css';
+import '@fontsource/ibm-plex-sans/latin-600.css';
 import '@/styles/globals.css';
 import '@/styles/workspace.css';
 
 export const metadata: Metadata = {
-  title: 'Daybook | Your tasks, in focus',
-  description: 'A simple place to manage your tasks.',
+  title: 'Daybook | Task manager',
+  description: 'Create, edit, and delete tasks.',
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

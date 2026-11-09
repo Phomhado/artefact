@@ -8,6 +8,8 @@ import { TaskForm, type TaskFormValues } from './TaskForm';
 import { TaskList } from './TaskList';
 import { LoadMoreTasks } from './LoadMoreTasks';
 import { Toast, type Notification } from './Toast';
+import { TaskModal } from './TaskModal';
+import { Icon } from './Icon';
 
 type TaskManagerProps = {
   initialPage: TaskPage;
@@ -16,23 +18,23 @@ type TaskManagerProps = {
 export function TaskManager({ initialPage }: TaskManagerProps) {
   const { tasks, saveTask, deleteTask } = useTasks(initialPage);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
-  const [formVersion, setFormVersion] = useState(0);
+  const [formOpen, setFormOpen] = useState(false);
   const [notification, setNotification] = useState<Notification | null>(null);
   const [restoredTaskId, setRestoredTaskId] = useState<string>();
   const deleteInProgress = useRef(false);
   const dismissNotification = useCallback(() => setNotification(null), []);
   const busy = saveTask.isPending || deleteTask.isPending;
 
-  function resetForm() {
+  function closeForm() {
+    setFormOpen(false);
     setEditingTask(null);
-    setFormVersion((version) => version + 1);
   }
 
   async function handleSave(values: TaskFormValues) {
     const taskToEdit = editingTask;
     await saveTask.mutateAsync({ ...values, id: taskToEdit?.id });
     setNotification({ message: taskToEdit ? 'Task updated.' : 'Task created.', tone: 'success' });
-    if (taskToEdit) resetForm();
+    closeForm();
   }
 
   async function handleDelete(id: string) {
@@ -43,7 +45,7 @@ export function TaskManager({ initialPage }: TaskManagerProps) {
 
     try {
       await deleteTask.mutateAsync(id);
-      if (editingTask?.id === id) resetForm();
+      if (editingTask?.id === id) closeForm();
     } catch (error) {
       setRestoredTaskId(id);
       setNotification({ message: `${errorMessage(error)} The task has been restored.`, tone: 'error' });
@@ -54,20 +56,26 @@ export function TaskManager({ initialPage }: TaskManagerProps) {
 
   function handleEdit(task: Task) {
     setEditingTask(task);
-    setFormVersion((version) => version + 1);
+    setFormOpen(true);
+  }
+
+  function handleCreate() {
+    setEditingTask(null);
+    setFormOpen(true);
   }
 
   return (
-    <div className="workspace">
-      <TaskForm
-        key={formVersion}
-        task={editingTask}
-        disabled={deleteTask.isPending || (!!editingTask && saveTask.isPending)}
-        saving={saveTask.isPending}
-        autoFocus={formVersion > 0}
-        onSave={handleSave}
-        onCancel={resetForm}
-      />
+    <>
+      <div className="page-heading">
+        <div>
+          <h1>Tasks</h1>
+          <p className="page-description">Create, edit, and manage tasks.</p>
+        </div>
+        <button className="secondary" type="button" onClick={handleCreate} disabled={busy}>
+          <Icon name="plus" /> New task
+        </button>
+      </div>
+      <div className="workspace">
       <TaskList
         tasks={tasks.data.pages.flatMap((page) => page.items)}
         total={tasks.data.pages[0].total}
@@ -79,6 +87,7 @@ export function TaskManager({ initialPage }: TaskManagerProps) {
         onEdit={handleEdit}
         onDelete={handleDelete}
         onRetry={() => tasks.refetch()}
+        onCreate={handleCreate}
       >
         <LoadMoreTasks
           hasMore={tasks.hasNextPage}
@@ -88,7 +97,19 @@ export function TaskManager({ initialPage }: TaskManagerProps) {
           onLoadMore={() => tasks.fetchNextPage()}
         />
       </TaskList>
+      </div>
+      {formOpen && (
+        <TaskModal saving={saveTask.isPending} onClose={closeForm}>
+          <TaskForm
+            task={editingTask}
+            disabled={saveTask.isPending}
+            saving={saveTask.isPending}
+            onSave={handleSave}
+            onCancel={closeForm}
+          />
+        </TaskModal>
+      )}
       {notification && <Toast notification={notification} onDismiss={dismissNotification} />}
-    </div>
+    </>
   );
 }

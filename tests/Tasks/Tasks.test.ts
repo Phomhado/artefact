@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createTaskStore } from './tasks';
+import { createTaskStore } from '@/server/tasks';
 
 describe('task store', () => {
   it('creates, lists, updates, and deletes a task', () => {

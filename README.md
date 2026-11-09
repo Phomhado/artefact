@@ -1,46 +1,55 @@
 # Daybook
 
-A small task manager built with Next.js 15, React, TypeScript, and tRPC.
+A simple task manager built for the Artefact Software Engineer case, with server rendering, CRUD operations, and infinite scrolling.
 
-## Running locally
+## Run locally
 
-Use Node.js 22 LTS and pnpm 11.
+Use Node.js 22 or newer and pnpm 11.25.0.
 
 ```sh
+git clone https://github.com/Phomhado/artefact.git
+cd artefact
 pnpm install --frozen-lockfile
 pnpm dev
 ```
 
-Open http://localhost:3000. To run a production build:
+Open [localhost:3000](http://localhost:3000). No database setup or environment variables are needed.
+
+For a production build:
 
 ```sh
 pnpm build
 pnpm start
 ```
 
-## How it works
+## Main decisions
 
-The home page loads the first 10 tasks through a server-side tRPC caller and renders them on each request. Client components handle the form and send mutations to `/api/trpc`. TanStack Query refreshes loaded pages after a successful change.
+- **Next.js 15 App Router:** runs the frontend and backend in one project. Version 15 follows the brief, and a separate API server would add unnecessary setup.
+- **TypeScript and tRPC:** share procedure types between frontend and backend. Zod validates incoming data at runtime; static types alone cannot validate requests.
+- **In-memory storage:** a server-side Map meets the requirement without a database or ORM. Tasks use UUIDs and ISO creation timestamps, displayed in UTC. Field names follow the brief: `id`, `titulo`, `descricao`, and `dataCriacao`.
+- **SSR and pagination:** each request renders the first 10 tasks through a server-side tRPC caller. TanStack Query reuses that data and loads further pages. A creation-order cursor keeps pagination stable when tasks are edited or deleted.
+- **Small components and plain CSS:** the form owns its inputs, `TaskManager` coordinates interactions, and `useTasks` handles requests and caching. The interface uses Artefact-inspired navy and pink, self-hosted IBM Plex Sans, and inline SVG icons. Fonts are bundled with the app rather than requested from an external font service.
 
-Scrolling near the bottom loads the next 10 tasks. A Load more button also supports keyboard navigation and browsers without IntersectionObserver. If a request fails, existing tasks stay visible and the user can retry. Loading stops after the last page.
+## User experience
 
-Pagination uses a numeric cursor based on creation order, newest first. Updating a task does not change its position, and deleting the task used as a cursor does not break the next request. New tasks appear when the list refreshes; loaded pages are fetched sequentially to keep their boundaries consistent.
+Creation and editing use a modal with a larger description field. Focus moves to the title when it opens and returns to the trigger when it closes. Enter in the title submits; Enter in the description adds a new line. Successful saves close the modal, while failed saves keep the entered values. Cancel, Escape, and clicking the backdrop close it when no save is pending.
 
-## Project structure
+Deletion updates the list and count immediately, with toast feedback. If the request fails, the task is restored and an error explains what happened. The backend rejects blank titles and returns meaningful errors for missing tasks.
 
-- `src/app`: pages, layout, and the tRPC HTTP endpoint.
-- `src/components`: task form, list, cards, and pagination controls.
-- `src/hooks/useTasks.ts`: queries, mutations, and cache refreshes.
-- `src/server`: input validation, tRPC procedures, and the task store.
-- `src/styles`: application styles.
+Infinite scroll shows skeleton cards while loading, with a **Load more** button as a fallback. Card actions appear on hover or keyboard focus on desktop, and through a swipe or actions button on mobile. Empty states, visible focus indicators, and reduced-motion support are included.
 
-## Design decisions
+## Structure
 
-The form owns its input state, while TaskManager coordinates editing and feedback. The backend runs inside Next.js so the project only needs one server. A small in-memory store meets the exercise requirements without a database or ORM.
-
-The backend validates inputs with Zod. Titles are trimmed and required; missing tasks return a `NOT_FOUND` error. Task fields follow the names in the brief: `id`, `titulo`, `descricao`, and `dataCriacao`. Creation timestamps are ISO strings and displayed in UTC.
-
-Tasks live in a server-side Map. They survive page refreshes but disappear when the server process restarts. The store is shared by everyone using the same process; it does not support independent server instances or reliable serverless persistence. No database, authentication, or environment variables are needed for this exercise.
+```text
+src/
+  app/          Pages, layout, and tRPC HTTP endpoint
+  components/   Form, list, cards, and feedback
+  hooks/        Queries, mutations, and cache updates
+  lib/          Client setup and shared helpers
+  server/       Task store, validation, and procedures
+  styles/       Global and workspace CSS
+tests/          Test suites grouped by component or module
+```
 
 ## Checks
 
@@ -51,14 +60,8 @@ pnpm typecheck
 pnpm build
 ```
 
-The tests cover the task lifecycle, blank titles, missing tasks, and pagination boundaries, including changes between page requests.
+Tests cover CRUD through the store, router, and HTTP handler; validation limits; missing tasks; pagination; optimistic rollback; modal creation and editing; failed saves and retries; cancellation; focus restoration; swipe controls; scroll triggers; skeleton loading; and notification timing. Component tests use jsdom, so visual layout and real browser gestures still need manual checks.
 
-## Interaction details
+## Limitations
 
-The task form stays above the list. Enter submits a title, clears the form, and keeps focus in the title field while the request runs. Failed submissions restore the values if no newer draft has been started.
-
-Deletion is optimistic: the task and count update immediately, with a toast for feedback. The previous query data is restored if the request fails, and the restored card slides back into view. Delete requests are guarded against repeated clicks while one is pending.
-
-Additional pages use three pulsing skeleton cards. Edit and delete actions appear on hover or keyboard focus on desktop. On touch devices, swipe left on a card or use its actions button to reveal them; swipe right closes them. Reduced-motion preferences disable the pulse and slide animations.
-
-Interaction tests cover pending and failed requests, draft preservation, swipe controls, and skeleton loading.
+Tasks survive browser refreshes but disappear when the server restarts. Everyone using the same server process shares the list; separate instances have separate stores. This meets the exercise requirements but would need persistent storage and authentication for a production application with separate user accounts.

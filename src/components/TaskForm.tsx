@@ -14,17 +14,15 @@ type TaskFormProps = {
   task: Task | null;
   disabled: boolean;
   saving: boolean;
-  autoFocus?: boolean;
   onSave: (values: TaskFormValues) => Promise<void>;
   onCancel: () => void;
 };
 
-export function TaskForm({ task, disabled, saving, autoFocus = false, onSave, onCancel }: TaskFormProps) {
+export function TaskForm({ task, disabled, saving, onSave, onCancel }: TaskFormProps) {
   const titleRef = useRef<HTMLInputElement>(null);
   const [title, setTitle] = useState(task?.titulo ?? '');
   const [description, setDescription] = useState(task?.descricao ?? '');
   const [error, setError] = useState('');
-  const draftVersion = useRef(0);
   const submitLabel = task ? 'Save changes' : 'Create task';
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -38,24 +36,11 @@ export function TaskForm({ task, disabled, saving, autoFocus = false, onSave, on
     }
 
     const values = { titulo: title.trim(), descricao: description.trim() };
-    const version = ++draftVersion.current;
-
-    if (!task) {
-      setTitle('');
-      setDescription('');
-      titleRef.current?.focus();
-    }
 
     try {
       await onSave(values);
     } catch (error) {
       setError(`Could not save "${values.titulo}": ${errorMessage(error)}`);
-      if (draftVersion.current === version) {
-        if (!task) {
-          setTitle(values.titulo);
-          setDescription(values.descricao);
-        }
-      }
     }
   }
 
@@ -64,8 +49,7 @@ export function TaskForm({ task, disabled, saving, autoFocus = false, onSave, on
       <div className="composer-heading">
         <span className="composer-icon"><Icon name={task ? 'edit' : 'plus'} /></span>
         <div>
-          <h2 id="form-heading">{task ? 'Edit task' : 'Make a little progress'}</h2>
-          <p>{task ? 'A quick update, then back to it.' : 'What’s the next thing on your mind?'}</p>
+          <h2 id="form-heading">{task ? 'Edit task' : 'New task'}</h2>
         </div>
       </div>
       <form onSubmit={handleSubmit}>
@@ -77,11 +61,10 @@ export function TaskForm({ task, disabled, saving, autoFocus = false, onSave, on
             ref={titleRef}
             id="title"
             value={title}
-            onChange={(event) => { draftVersion.current++; setTitle(event.target.value); }}
+            onChange={(event) => setTitle(event.target.value)}
             required
             maxLength={120}
-            autoFocus={autoFocus}
-            placeholder="e.g. Prepare for the interview"
+            placeholder="Enter task title"
             aria-invalid={!!error}
             aria-describedby={error ? 'form-error' : undefined}
           />
@@ -90,27 +73,24 @@ export function TaskForm({ task, disabled, saving, autoFocus = false, onSave, on
           </label>
           <textarea
             id="description"
-            rows={5}
+            rows={8}
             maxLength={2000}
             value={description}
-            placeholder="Add a little context…"
-            onChange={(event) => { draftVersion.current++; setDescription(event.target.value); }}
+            placeholder="Enter task details"
+            onChange={(event) => setDescription(event.target.value)}
           />
           {error && <p id="form-error" className="error" role="alert">{error}</p>}
           <div className="form-actions">
+            <button className="secondary" type="button" onClick={onCancel}>
+              Cancel
+            </button>
             <button className="primary" type="submit">
-              {saving && task ? 'Saving…' : submitLabel}
+              {saving ? 'Saving…' : submitLabel}
               <Icon name="arrow" />
             </button>
-            {task && (
-              <button className="secondary" type="button" onClick={onCancel}>
-                Cancel
-              </button>
-            )}
           </div>
         </fieldset>
       </form>
-      <p className="composer-note">Keep it simple. You can always edit it later.</p>
     </section>
   );
 }

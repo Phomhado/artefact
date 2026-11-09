@@ -15,6 +15,7 @@ type TaskListProps = {
   onEdit: (task: Task) => void;
   onDelete: (id: string) => void;
   onRetry: () => void;
+  onCreate: () => void;
 };
 
 export function TaskList({
@@ -29,6 +30,7 @@ export function TaskList({
   onEdit,
   onDelete,
   onRetry,
+  onCreate,
 }: TaskListProps) {
   return (
     <section className="task-list" aria-labelledby="list-heading" aria-busy={refreshing}>
@@ -49,10 +51,11 @@ export function TaskList({
             <div className="empty-sheet"><Icon name="stack" /><i /><i /><i /></div>
             <span className="empty-plus"><Icon name="plus" /></span>
           </div>
-          <p className="eyebrow">Room for what’s next</p>
-          <h3>You’re all caught up!</h3>
-          <p>Add a task above to get started.</p>
-          <a className="empty-link" href="#title">Create your first task <Icon name="arrow" /></a>
+          <h3>No tasks</h3>
+          <p>Create a task to get started.</p>
+          <button className="empty-link" type="button" onClick={onCreate} disabled={disabled}>
+            Create task <Icon name="arrow" />
+          </button>
         </div>
       ) : (
         <ul className="task-items">
